@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sitemap & llms.txt Generator
 
-## Getting Started
+Free tool by [FusionSync](https://www.fusionsync.ai) that crawls a public website and generates:
 
-First, run the development server:
+- `sitemap.xml` for search engine discovery
+- `llms.txt` for AI/LLM discovery
+
+Built with Next.js, TypeScript, and deterministic crawling engines (no API keys, no LLM).
+
+## Features
+
+- Same-origin HTTP crawler with bounded limits (pages, depth, time budget)
+- Valid `sitemap.xml` output with optional `<lastmod>`
+- `llms.txt` output grouped by site sections with titles and descriptions
+- Live progress via Server-Sent Events
+- SSRF protection and per-IP rate limiting
+- Copy/download results from the UI
+- SEO blog ("The Playbook") at `/blog` with article pages, JSON-LD, and a generated `sitemap.xml` / `robots.txt`
+
+## Editing content
+
+- Brand links, logo, and the Cal booking URL live in [`src/lib/brand.ts`](src/lib/brand.ts).
+- Color theme is two CSS variables (`--accent-from` / `--accent-to`) in [`src/app/globals.css`](src/app/globals.css).
+- Blog posts live in `src/content/blog/posts/` — add a `.tsx` file exporting `meta` + `Content`, then register it in [`src/content/blog/index.ts`](src/content/blog/index.ts).
+
+## Tech stack
+
+- [Next.js](https://nextjs.org/) (App Router)
+- [@geosuite/sitemap-builder](https://github.com/TryGeoSuite/sitemap-builder)
+- [@geosuite/llms-txt-generator](https://github.com/TryGeoSuite/llms-txt-generator)
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+NEXT_PUBLIC_SITE_URL=https://sitemap.fusionsync.ai
+```
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
+Deploy to Vercel. The API route is configured for a 60s function timeout in `vercel.json`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Limitations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- HTTP-only crawling (no JavaScript rendering)
+- Same-origin links only
+- Best for marketing sites, docs, and CMS-backed pages
+- SPAs whose links only appear after client-side hydration may be incomplete
 
-## Deploy on Vercel
+## Related tools
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [GEO Report](https://geo-report.fusionsync.ai)
+- [FusionSync](https://fusionsync.ai)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
+# sitemap-llm-generator
