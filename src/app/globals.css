@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
+/*
+ * Color theme — change these two variables to re-theme the whole tool.
+ * Currently a teal -> emerald accent (distinct from geo-report's blue/violet).
+ */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+
+  --accent-from: #0d9488; /* teal-600 */
+  --accent-to: #059669; /* emerald-600 */
+  --accent: #0d9488;
+  --accent-strong: #0f766e; /* teal-700 */
+  --accent-soft: #f0fdfa; /* teal-50 */
+  --accent-border: #99f6e4; /* teal-200 */
+
+  --surface: #f8fafc; /* slate-50 */
+  --surface-2: #f1f5f9; /* slate-100 */
+  --border: #e2e8f0; /* slate-200 */
+  --muted: #64748b; /* slate-500 */
+  --ink: #0f172a; /* slate-900 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --font-sans: var(--font-poppins);
+  --font-heading: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-heading {
+  font-family: var(--font-montserrat), var(--font-poppins), sans-serif;
+}
+
+.accent-gradient {
+  background-image: linear-gradient(
+    to right,
+    var(--accent-from),
+    var(--accent-to)
+  );
+}
+
+.accent-text {
+  background-image: linear-gradient(
+    to right,
+    var(--accent-from),
+    var(--accent-to)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+::selection {
+  background: var(--accent-border);
+  color: var(--ink);
 }
