@@ -197,7 +197,7 @@ export async function generate(
     })),
     sitemapXml,
     llmsTxt,
-    hitCap: crawlResult.hitCap || merged.pages.length >= maxPages,
+    hitCap: merged.pages.length >= maxPages,
     hitDeadline: crawlResult.hitDeadline,
     siteName,
     discoverySource: merged.discoverySource,

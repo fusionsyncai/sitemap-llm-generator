@@ -24,7 +24,7 @@ export function ResultsPanel({ result }: ResultsPanelProps) {
       result.discoverySource === "hybrid"
     ) {
       items.push(
-        `Discovered ${result.sitemapCount} page${result.sitemapCount === 1 ? "" : "s"} from sitemap.xml. This site uses client-side rendering, so link crawling alone would miss most pages.`,
+        `Loaded ${result.pages.length} page${result.pages.length === 1 ? "" : "s"} (${result.sitemapCount} from sitemap.xml). Link crawling alone would miss most pages on this JavaScript-rendered site.`,
       );
     }
 
