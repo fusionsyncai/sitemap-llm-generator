@@ -5,6 +5,12 @@ import {
   renderLlmsTxt,
   type LlmsEntry,
 } from "@geosuite/llms-txt-generator";
+import {
+  loadSitemapTree,
+  mergeDiscoveredPages,
+  normalizePageUrl,
+  resolveCanonicalUrl,
+} from "./discovery";
 import type { GenerateOptions, GenerateResult } from "./types";
 
 export const HARD_CAPS = {
@@ -42,21 +48,62 @@ export async function generate(
   const enrich = opts.enrich ?? true;
   const includeLastmod = opts.includeLastmod ?? true;
 
+  const inputUrl = normalizePageUrl(startUrl) ?? startUrl;
+
   opts.onProgress?.({
-    phase: "crawling",
-    message: "Discovering pages on your site...",
+    phase: "resolving",
+    message: "Resolving canonical URL...",
   });
 
-  const { pages, hitCap, hitDeadline } = await crawlSite(startUrl, {
-    maxPages,
-    maxDepth,
+  const canonicalUrl = await resolveCanonicalUrl(inputUrl, timeoutMs);
+  const origin = new URL(canonicalUrl).origin;
+
+  const sitemapEntries = await loadSitemapTree(origin, maxPages);
+
+  if (sitemapEntries.length > 0) {
+    opts.onProgress?.({
+      phase: "sitemap",
+      message: `Loaded ${sitemapEntries.length} URLs from sitemap.xml`,
+      pageCount: sitemapEntries.length,
+      sitemapCount: sitemapEntries.length,
+      canonicalUrl,
+    });
+  }
+
+  const shouldSupplementCrawl = sitemapEntries.length > 0;
+  const crawlMaxPages = shouldSupplementCrawl
+    ? Math.min(maxPages, 30)
+    : maxPages;
+  const crawlMaxDepth = shouldSupplementCrawl ? Math.min(maxDepth, 2) : maxDepth;
+  const crawlBudgetS = shouldSupplementCrawl
+    ? Math.min(budgetS, 15)
+    : budgetS;
+
+  opts.onProgress?.({
+    phase: "crawling",
+    message: shouldSupplementCrawl
+      ? "Running a quick link crawl to catch any unlisted pages..."
+      : "Discovering pages on your site...",
+    canonicalUrl,
+  });
+
+  const crawlResult = await crawlSite(canonicalUrl, {
+    maxPages: crawlMaxPages,
+    maxDepth: crawlMaxDepth,
     concurrency,
     perPageTimeoutMs: timeoutMs,
-    deadlineMs: Date.now() + budgetS * 1000,
+    deadlineMs: Date.now() + crawlBudgetS * 1000,
     userAgent: USER_AGENT,
   });
 
-  if (pages.length === 0) {
+  const merged = mergeDiscoveredPages(
+    crawlResult.pages,
+    sitemapEntries,
+    maxPages,
+    canonicalUrl,
+  );
+
+  if (merged.pages.length === 0) {
     throw new Error(
       "No pages were discovered. The site may be unreachable, block crawlers, or require JavaScript rendering.",
     );
@@ -64,12 +111,16 @@ export async function generate(
 
   opts.onProgress?.({
     phase: "crawled",
-    message: `Found ${pages.length} page${pages.length === 1 ? "" : "s"}`,
-    pageCount: pages.length,
+    message: `Found ${merged.pages.length} page${merged.pages.length === 1 ? "" : "s"}`,
+    pageCount: merged.pages.length,
+    discoverySource: merged.discoverySource,
+    canonicalUrl: merged.canonicalUrl,
+    sitemapCount: merged.sitemapCount,
+    crawlCount: merged.crawlCount,
   });
 
   const sitemapXml = renderSitemapXml(
-    pages.map((page) => ({
+    merged.pages.map((page) => ({
       url: page.url,
       ...(includeLastmod && page.lastModified
         ? { lastmod: page.lastModified }
@@ -77,9 +128,9 @@ export async function generate(
     })),
   );
 
-  const siteName = deriveSiteName(startUrl);
+  const siteName = deriveSiteName(merged.canonicalUrl);
 
-  let entries: LlmsEntry[] = pages.map((page) => ({
+  let entries: LlmsEntry[] = merged.pages.map((page) => ({
     loc: page.url,
     title: page.title ?? undefined,
   }));
@@ -90,6 +141,8 @@ export async function generate(
       message: "Enriching page metadata for llms.txt...",
       processed: 0,
       total: entries.length,
+      discoverySource: merged.discoverySource,
+      canonicalUrl: merged.canonicalUrl,
     });
 
     const enriched: LlmsEntry[] = [];
@@ -108,6 +161,8 @@ export async function generate(
         message: "Enriching page metadata for llms.txt...",
         processed: Math.min(index + batch.length, entries.length),
         total: entries.length,
+        discoverySource: merged.discoverySource,
+        canonicalUrl: merged.canonicalUrl,
       });
     }
 
@@ -120,7 +175,11 @@ export async function generate(
   opts.onProgress?.({
     phase: "complete",
     message: "Generation complete",
-    pageCount: pages.length,
+    pageCount: merged.pages.length,
+    discoverySource: merged.discoverySource,
+    canonicalUrl: merged.canonicalUrl,
+    sitemapCount: merged.sitemapCount,
+    crawlCount: merged.crawlCount,
   });
 
   const descriptionByUrl = new Map(
@@ -128,7 +187,7 @@ export async function generate(
   );
 
   return {
-    pages: pages.map((page) => ({
+    pages: merged.pages.map((page) => ({
       url: page.url,
       depth: page.depth,
       status: page.status,
@@ -138,8 +197,13 @@ export async function generate(
     })),
     sitemapXml,
     llmsTxt,
-    hitCap,
-    hitDeadline,
+    hitCap: crawlResult.hitCap || merged.pages.length >= maxPages,
+    hitDeadline: crawlResult.hitDeadline,
     siteName,
+    discoverySource: merged.discoverySource,
+    canonicalUrl: merged.canonicalUrl,
+    inputUrl,
+    sitemapCount: merged.sitemapCount,
+    crawlCount: merged.crawlCount,
   };
 }

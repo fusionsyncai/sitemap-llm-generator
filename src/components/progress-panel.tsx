@@ -15,6 +15,9 @@ function activeStepIndex(
   if (status === "complete") return 3;
   if (!progress) return 0;
   switch (progress.phase) {
+    case "resolving":
+      return 0;
+    case "sitemap":
     case "crawling":
       return 1;
     case "crawled":
@@ -25,6 +28,19 @@ function activeStepIndex(
       return 3;
     default:
       return 0;
+  }
+}
+
+function discoveryLabel(source?: ProgressEvent["discoverySource"]): string | null {
+  switch (source) {
+    case "hybrid":
+      return "via sitemap.xml + crawl";
+    case "sitemap":
+      return "via sitemap.xml";
+    case "crawl":
+      return "via link crawl";
+    default:
+      return null;
   }
 }
 
@@ -53,6 +69,17 @@ export function ProgressPanel({ status, progress, error }: ProgressPanelProps) {
           <p className="mt-1 text-sm text-slate-500">
             {progress.pageCount} page{progress.pageCount === 1 ? "" : "s"}{" "}
             discovered
+            {discoveryLabel(progress.discoverySource)
+              ? ` ${discoveryLabel(progress.discoverySource)}`
+              : ""}
+          </p>
+        ) : null}
+
+        {progress?.canonicalUrl &&
+        progress.phase !== "resolving" &&
+        progress.canonicalUrl !== progress.message ? (
+          <p className="mt-1 text-xs text-slate-400">
+            Canonical URL: {progress.canonicalUrl}
           </p>
         ) : null}
 

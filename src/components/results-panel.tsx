@@ -18,6 +18,27 @@ export function ResultsPanel({ result }: ResultsPanelProps) {
 
   const warnings = useMemo(() => {
     const items: string[] = [];
+
+    if (
+      result.discoverySource === "sitemap" ||
+      result.discoverySource === "hybrid"
+    ) {
+      items.push(
+        `Discovered ${result.sitemapCount} page${result.sitemapCount === 1 ? "" : "s"} from sitemap.xml. This site uses client-side rendering, so link crawling alone would miss most pages.`,
+      );
+    }
+
+    if (
+      result.inputUrl &&
+      result.canonicalUrl &&
+      normalizeDisplayUrl(result.inputUrl) !==
+        normalizeDisplayUrl(result.canonicalUrl)
+    ) {
+      items.push(
+        `Resolved ${result.inputUrl} to ${result.canonicalUrl} before discovery.`,
+      );
+    }
+
     if (result.hitCap) {
       items.push(
         "Page limit reached. Increase max pages for larger sites.",
@@ -29,7 +50,14 @@ export function ResultsPanel({ result }: ResultsPanelProps) {
       );
     }
     return items;
-  }, [result.hitCap, result.hitDeadline]);
+  }, [
+    result.discoverySource,
+    result.sitemapCount,
+    result.inputUrl,
+    result.canonicalUrl,
+    result.hitCap,
+    result.hitDeadline,
+  ]);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(activeContent);
@@ -58,6 +86,11 @@ export function ResultsPanel({ result }: ResultsPanelProps) {
           </h2>
           <p className="mt-0.5 text-sm text-slate-500">
             {result.pages.length} pages for {result.siteName}
+            {result.discoverySource === "hybrid"
+              ? " · sitemap + crawl"
+              : result.discoverySource === "sitemap"
+                ? " · sitemap.xml"
+                : " · link crawl"}
           </p>
         </div>
 
@@ -147,4 +180,16 @@ function TabButton({
       {children}
     </button>
   );
+}
+
+function normalizeDisplayUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    parsed.hostname = parsed.hostname.toLowerCase();
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "") || "/";
+    return parsed.href;
+  } catch {
+    return url;
+  }
 }

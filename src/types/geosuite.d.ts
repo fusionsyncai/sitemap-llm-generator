@@ -38,6 +38,15 @@ declare module "@geosuite/llms-txt-generator" {
     description?: string;
   }
 
+  export interface ParsedSitemap {
+    type: "sitemap" | "sitemapindex";
+    entries: Array<{ loc: string; lastmod?: string }>;
+  }
+
+  export function loadSitemap(urlOrPath: string): Promise<ParsedSitemap>;
+
+  export function parseSitemap(xmlString: string): ParsedSitemap;
+
   export function enrichEntry(
     entry: LlmsEntry,
     opts?: { timeoutMs?: number; userAgent?: string },

@@ -1,4 +1,8 @@
+export type DiscoverySource = "crawl" | "sitemap" | "hybrid";
+
 export type ProgressPhase =
+  | "resolving"
+  | "sitemap"
   | "crawling"
   | "crawled"
   | "enriching"
@@ -10,6 +14,10 @@ export interface ProgressEvent {
   pageCount?: number;
   processed?: number;
   total?: number;
+  discoverySource?: DiscoverySource;
+  canonicalUrl?: string;
+  sitemapCount?: number;
+  crawlCount?: number;
 }
 
 export interface PageResult {
@@ -28,6 +36,11 @@ export interface GenerateResult {
   hitCap: boolean;
   hitDeadline: boolean;
   siteName: string;
+  discoverySource: DiscoverySource;
+  canonicalUrl: string;
+  inputUrl: string;
+  sitemapCount: number;
+  crawlCount: number;
 }
 
 export interface GenerateOptions {
