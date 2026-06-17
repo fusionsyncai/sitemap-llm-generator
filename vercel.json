@@ -1,7 +1,6 @@
 {
-  "functions": {
-    "src/app/api/generate/route.ts": {
-      "maxDuration": 60
-    }
-  }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "bun install",
+  "buildCommand": "bun run build"
 }
